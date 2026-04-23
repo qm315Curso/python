@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCA with Coffee Samples</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/10.5.0/math.min.js"></script>
+	
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Canonical Correlation Analysis of Coffee Samples</h1>
+    <input type="file" id="chemicalFile" accept=".csv">
+    <input type="file" id="sensorialFile" accept=".csv">
+    <button onclick="getData()">Run CCA</button>
+    
+    <canvas id="biplot" width="400" height="400"></canvas>
+    <div id="results"></div><br>
+	<p id="arrayDisplayX"></p>
+	<br>
+	<p id="arrayDisplayY"></p>
+
+    <script>
+        let chemicalData = [];
+        let sensorialData = [];
+
+        document.getElementById('chemicalFile').addEventListener('change', handleFileSelect);
+        document.getElementById('sensorialFile').addEventListener('change', handleFileSelect);
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+				
+                const rows = text.split('\n').map(row => row.split(',').map(Number));
+                if (event.target.id === 'chemicalFile') {
+                    chemicalData = rows.slice(1);
+					console.log(chemicalData);
+                } else {
+                    sensorialData = rows.slice(1);
+					console.log(sensorialData);
+                }
+            };
+            reader.readAsText(file);
+        }
+		function norm(mat){
+		    var mean=math.mean(mat);
+		    var std=math.std(mat);
+			var normCol=math.map(mat,x=>{(x-mean)/std});
+			return normCol;
+		}
+		function normalizeColumns(matrix) {
+            // Transpose the matrix to work with columns as arrays
+            const transposed = math.transpose(matrix);
+
+            // Normalize each column
+            const normalizedTransposed = math.map(transposed,x =>{
+                 var m=math.mean(x);
+				 var s=math.std(x);
+				 var normal=math.map(x,value=>{(value-m)/s;});
+				 return normal;
+				 
+              }			
+			);
+            
+            // Transpose back to the original row-column format
+            return math.transpose(normalizedTransposed);
+        }
+		function getData(){
+		    var X = math.matrix(chemicalData);
+			var Y = math.matrix(sensorialData);
+
+			
+			const meanX = math.mean(X, 0);
+			console.log(meanX);
+			const meanY = math.mean(Y, 0);
+            const centeredX = normalizeColumns(X)
+            
+			document.getElementById('arrayDisplayX').textContent = 'ArrayX: ' + JSON.stringify(centeredX);
+		}
+
+        function performCCA() {
+            if (chemicalData.length === 0 || sensorialData.length === 0) {
+                alert('Please upload both CSV files!');
+                return;
+            }
+            
+            const X = math.matrix(chemicalData);
+            const Y = math.matrix(sensorialData);
+			
+			
+            console.log("Inicia CCA");
+            // Center the matrices
+            const meanX = math.mean(X, 0);
+            const meanY = math.mean(Y, 0);
+            const centeredX = math.subtract(X, meanX);
+            const centeredY = math.subtract(Y, meanY);
+            
+
+
+            // Covariance matrices
+            const Sxy = math.multiply(math.transpose(centeredX), centeredY);
+            const Sxx = math.multiply(math.transpose(centeredX), centeredX);
+            const Syy = math.multiply(math.transpose(centeredY), centeredY);
+
+            // Calculate canonical correlations
+            const SxxInv = math.inv(Sxx);
+            const eigenValuesX = math.eigs(math.multiply(SxxInv, Sxy));
+            const eigenValuesY = math.eigs(math.multiply(math.inv(Syy), Sxy));
+
+            // Display results
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `<h2>Canonical Correlations:</h2><p>${eigenValuesX.values}</p><p>${eigenValuesY.values}</p>`;
+
+            // Plotting the biplot
+            plotBiplot(centeredX, centeredY);
+        }
+
+        function plotBiplot(X, Y) {
+            const ctx = document.getElementById('biplot').getContext('2d');
+            const data = {
+                datasets: [{
+                    label: 'Chemical Data',
+                    data: math.transpose(X)._data.map((val, i) => ({ x: val[0], y: val[1] })),
+                    backgroundColor: 'rgba(255, 99, 132, 0.5)'
+                }, {
+                    label: 'Sensorial Data',
+                    data: math.transpose(Y)._data.map((val, i) => ({ x: val[0], y: val[1] })),
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)'
+                }]
+            };
+
+            new Chart(ctx, {
+                type: 'scatter',
+                data: data,
+                options: {
+                    scales: {
+                        x: { type: 'linear', position: 'bottom' },
+                        y: { type: 'linear' }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

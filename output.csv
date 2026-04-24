@@ -1,0 +1,9 @@
+id,nombre,facultad,publicaciones,h_index,financiamiento,anio_ingreso,activo
+1,Ana,Ciencias,12,7,45000,2015,True
+2,Luis,Ingenieria,8,4,28000,2018,True
+3,Maria,Ciencias,20,11,72000,2012,True
+4,Carlos,Humanidades,5,3,0,2020,False
+5,Rosa,Ingenieriia,15,8,55000,2016,True
+6,Pedro,Ciencias,3,2,12000,2021,True
+7,Elena,Humanidades,9,5,0,2019,True
+8,Jorge,Ingenieria,18,10,63000,2014,True
